@@ -1,5 +1,17 @@
 # Yew Ethers D3
 Simpleton mainnet ethereum explorer.
+//      add links to explorer
+//      play with stream (instead of interval)
+//      ethers::providers::StreamExt
+//      add other networks
+//      download csv (what data & how many tx's)
+//      PLOT VARIATIONS OR SOMETHING INTERESTING
+//  https://github.com/gakonst/ethers-rs/blob/master/examples/subscribe_logs.rs
+//  https://github.com/gakonst/ethers-rs/blob/master/examples/watch_blocks.rs
+//  https://github.com/yewstack/yew/tree/master/examples   // NEW EXAMPLES!!
+
+
+
 
 # Yew Trunk Template
 

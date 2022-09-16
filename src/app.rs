@@ -1,16 +1,13 @@
 /////////////////////////////////////////////////////////////////
-//      WATCH BLOCKS AND REPORT DATA
-//      add links to explorer
-//      play with stream (instead of interval)
-//      PLOT VARIATIONS OR SOMETHING INTERESTING
-//  https://github.com/gakonst/ethers-rs/blob/master/examples/subscribe_logs.rs
-//  https://github.com/gakonst/ethers-rs/blob/master/examples/watch_blocks.rs
-//  https://github.com/yewstack/yew/tree/master/examples   // NEW EXAMPLES!!
+//
+//      interval -> stream
+//
 /////////////////////////////////////////////////////////////////
 use yew::prelude::*;
 use ethers::{prelude::*, utils::format_units};
 use std::sync::Arc;
 use gloo_timers::callback::Interval;
+use std::time::Duration;
 
 const API_MAINNET_KEY: &str = dotenv!("INFURA_WSS_KEY_MAINNET");
 
@@ -27,22 +24,40 @@ pub struct App {
     last_block: Option<Block<H256>>,    
     interval: Option<Interval>,
     error: Option<String>,
+    // list_to_display: Vec<Block<H256>> // make a function to:
+// let mut stream = provider.watch_blocks().await?.take(x); // where i can pick x: usize
+// process (https://docs.rs/ethers/0.17.0/ethers/providers/trait.StreamExt.html#) and display data 
+// table + plot
+// show-off
 }
 
 impl Component for App {
     type Message = AppMsg;
     type Properties = ();
     fn create(ctx: &Context<Self>) -> Self {
+//   TEST: STREAM (WS)
         ctx.link().send_future(async {
-            match Provider::<Ws>::connect(API_MAINNET_KEY)
-            .await {
-                Ok(prov) => {
-                    // prov.interval(12_000)
-                    AppMsg::SetClient(prov)
+            match Ws::connect(API_MAINNET_KEY).await {
+                Ok(ws) => {
+                    let provider = Provider::new(ws).interval(Duration::from_millis(12_000));
+                    AppMsg::SetClient(provider)
                 },
                 Err(err) => AppMsg::SetError(err.to_string())
-            }
+            } 
+
         });
+
+//   PROVIDER (WS) DISCRETELY CONNECTED AND SET AS ARC<..>
+//        ctx.link().send_future(async {
+//            match Provider::<Ws>::connect(API_MAINNET_KEY)
+//            .await {
+//                Ok(prov) => {
+//                    // prov.interval(12_000)
+//                    AppMsg::SetClient(prov)
+//                },
+//                Err(err) => AppMsg::SetError(err.to_string())
+//            }
+//        });
         Self {
             client: None,
             last_block: None,
@@ -82,10 +97,8 @@ impl Component for App {
                 true
             }
             AppMsg::SetClient(provider) => {
-                // try changing the client from an Arc<provider>
-                // to a directly polling Provider 
                 self.client = Some(Arc::new(provider));
-                ctx.link().send_message(AppMsg::FetchBlocks);
+                ctx.link().send_message(AppMsg::FetchBlocks); // first fetch
                 true
             }
             AppMsg::SetLastBlock(bn) => {
