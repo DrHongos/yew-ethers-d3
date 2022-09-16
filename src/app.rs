@@ -1,7 +1,8 @@
 /////////////////////////////////////////////////////////////////
 //      WATCH BLOCKS AND REPORT DATA
 //      add links to explorer
-//      PLOT VARIATION OR SOMETHING INTERESTING
+//      play with stream (instead of interval)
+//      PLOT VARIATIONS OR SOMETHING INTERESTING
 //  https://github.com/gakonst/ethers-rs/blob/master/examples/subscribe_logs.rs
 //  https://github.com/gakonst/ethers-rs/blob/master/examples/watch_blocks.rs
 //  https://github.com/yewstack/yew/tree/master/examples   // NEW EXAMPLES!!
@@ -23,7 +24,7 @@ pub enum AppMsg {
 }
 pub struct App {
     client: Option<Arc<Provider<Ws>>>,
-    last_block: Option<Block<H256>>,
+    last_block: Option<Block<H256>>,    
     interval: Option<Interval>,
     error: Option<String>,
 }
@@ -36,6 +37,7 @@ impl Component for App {
             match Provider::<Ws>::connect(API_MAINNET_KEY)
             .await {
                 Ok(prov) => {
+                    // prov.interval(12_000)
                     AppMsg::SetClient(prov)
                 },
                 Err(err) => AppMsg::SetError(err.to_string())
@@ -80,6 +82,8 @@ impl Component for App {
                 true
             }
             AppMsg::SetClient(provider) => {
+                // try changing the client from an Arc<provider>
+                // to a directly polling Provider 
                 self.client = Some(Arc::new(provider));
                 ctx.link().send_message(AppMsg::FetchBlocks);
                 true
@@ -105,9 +109,12 @@ impl Component for App {
                             {"Start interval"}
                         </button>
                     } else {
-                        <button onclick={ctx.link().callback(|_| AppMsg::StopInterval)}>
-                            {"Stop interval"}
-                        </button>
+                        <div>
+                            <button onclick={ctx.link().callback(|_| AppMsg::StopInterval)}>
+                                <div class={"spinner"}></div>
+                                {"Stop interval"}                            
+                            </button>                
+                        </div>
                     }
                 }
                 {self.table_block()}

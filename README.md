@@ -1,3 +1,6 @@
+# Yew Ethers D3
+Simpleton mainnet ethereum explorer.
+
 # Yew Trunk Template
 
 This is a fairly minimal template for a Yew app that's built with [Trunk].
