@@ -33,3 +33,7 @@ h1 + .subtitle {
   display: block;
   margin-top: -1em;
 }
+table, th, td {
+  border: 1px solid;
+  padding: 5px;
+}

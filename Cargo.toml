@@ -1,14 +1,26 @@
 [package]
-name = "trunk-template"
+name = "yew_ethers_d3"
 version = "0.1.0"
 edition = "2021"
-description = "Template for starting a Yew project using Trunk"
+description = "Plotting ethers data with Rust"
 readme = "README.md"
 repository = "https://github.com/yewstack/yew-trunk-minimal-template"
 license = "MIT OR Apache-2.0"
-keywords = ["yew", "trunk"]
+keywords = ["yew", "trunk", "dapp", "ethers", "d3"]
 categories = ["gui", "wasm", "web-programming"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 yew = "0.19"
+dotenv_codegen = "0.15.0"
+ethers = {version= "0.17.0", features = ["abigen", "legacy", "ws", "openssl"]}
+log = "0.4.6"
+wasm-logger = "0.2"
+gloo-timers = "0.2.4"
+#web-sys = {version = "0.3.56"} #, features = ["HtmlSelectElement", "HtmlCollection"]
+#serde = { version = "1.0.141", features = ["derive"] }
+#wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+#wasm-bindgen-futures = "0.4"
+#js-sys = "0.3.59"
+#serde_json = "1.0.82"
+# wasm-bindgen, wasm-bindgen-futures, web-sys.. etc
