@@ -12,15 +12,11 @@ categories = ["gui", "wasm", "web-programming"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 yew = "0.19"
+serde = "1.0.144"
 dotenv_codegen = "0.15.0"
 ethers = {version= "0.17.0", features = ["abigen", "legacy", "ws", "openssl"]}
 log = "0.4.6"
 wasm-logger = "0.2"
 gloo-timers = "0.2.4"
-#web-sys = {version = "0.3.56"} #, features = ["HtmlSelectElement", "HtmlCollection"]
-#serde = { version = "1.0.141", features = ["derive"] }
-#wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
-#wasm-bindgen-futures = "0.4"
-#js-sys = "0.3.59"
-#serde_json = "1.0.82"
-# wasm-bindgen, wasm-bindgen-futures, web-sys.. etc
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+serde-wasm-bindgen = "0.4.3"

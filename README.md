@@ -1,16 +1,20 @@
 # Yew Ethers D3
 Simpleton mainnet ethereum explorer.
-//      add links to explorer
-//      play with stream (instead of interval)
-//      ethers::providers::StreamExt
 //      add other networks
+//      make variable in plot selectable (handle different types)
+//      fetch previous data
+//      cache?
+//      add filters (listeners & for queries (tokens, NFTs (ethers has a module for it)))      
 //      download csv (what data & how many tx's)
-//      PLOT VARIATIONS OR SOMETHING INTERESTING
+//      play with stream (instead of interval) to continue..
 //  https://github.com/gakonst/ethers-rs/blob/master/examples/subscribe_logs.rs
 //  https://github.com/gakonst/ethers-rs/blob/master/examples/watch_blocks.rs
 //  https://github.com/yewstack/yew/tree/master/examples   // NEW EXAMPLES!!
 
-
+BUG: 
+    take() function to limit the number of tx printed in the table seems to fail
+    with value 2 or 3 it works.
+    But larger numbers make tome tx to repeat, while printing more rows than desired (and supposedly restricted)
 
 
 # Yew Trunk Template
