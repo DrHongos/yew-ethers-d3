@@ -2,8 +2,8 @@
 #[macro_use]
 extern crate dotenv_codegen;
 
-mod app;
 use wasm_logger;
+mod app;
 
 use app::App;
 

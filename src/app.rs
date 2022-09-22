@@ -1,18 +1,12 @@
-/////////////////////////////////////////////////////////////////
-//
-//      d3
-//      research StreamExt and yew agents maybe?        
-//
-/////////////////////////////////////////////////////////////////
+#![allow(non_snake_case)]
 use yew::prelude::*;
 use ethers::{prelude::*, utils::format_units};
 use std::sync::Arc;
 use gloo_timers::callback::Interval;
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
-//use std::time::Duration;
 
-const API_MAINNET_KEY: &str = dotenv!("INFURA_WSS_KEY_MAINNET");
+const API_MAINNET_KEY: &str = dotenv!("WSS_KEY_MAINNET");
 
 #[wasm_bindgen(module = "/src/jscripts/lineal_chart.js")]
 extern "C" {
@@ -27,55 +21,50 @@ pub enum AppMsg {
     SetLastBlock(Block<H256>),    
     SetError(String),
     StartInterval,
+    FetchMempool,
+    UpdateMempool(TxpoolContent),
     StopInterval,
 }
 pub struct App {
     client: Option<Arc<Provider<Ws>>>,
     last_block: Option<Block<H256>>,    
     interval: Option<Interval>,
+    mempool_interval: Option<Interval>,
+    mempool: Option<TxpoolContent>,
     error: Option<String>,
     list_to_display: Vec<Block<H256>>,
-//    streamer: Option<FilterWatcher<Ws, H256>>, // 
-// process (https://docs.rs/ethers/0.17.0/ethers/providers/trait.StreamExt.html#)
 }
 #[derive(Debug, Serialize)]
 struct Tick {
-    x: u64, // timestamp
-    y: String, // whatever
+    x: u64,
+    y: String, // hardcoded to base_fee_per_gas attribute
 }
 
 impl Component for App {
     type Message = AppMsg;
     type Properties = ();
     fn create(ctx: &Context<Self>) -> Self {
-//   TEST: STREAM (WS)
         ctx.link().send_future(async {
             match Ws::connect(API_MAINNET_KEY).await {
                 Ok(ws) => {
-                    let provider = Provider::new(ws);//.interval(Duration::from_millis(12_000));
-                    //                     
+                    let provider = Provider::new(ws);
+                    let client_ver = provider.client_version().await.unwrap();
+                    log::info!("Provider: {}",client_ver);
                     AppMsg::SetClient(provider)
                 },
-                Err(err) => AppMsg::SetError(err.to_string())
+                Err(err) => {
+                    log::error!("Error in connection to provider: {:?}", err);
+                    AppMsg::SetError(err.to_string())
+                }
             } 
         });
-
-//   PROVIDER (WS) DISCRETELY CONNECTED AND SET AS ARC<..>
-//        ctx.link().send_future(async {
-//            match Provider::<Ws>::connect(API_MAINNET_KEY)
-//            .await {
-//                Ok(prov) => {
-//                    // prov.interval(12_000)
-//                    AppMsg::SetClient(prov)
-//                },
-//                Err(err) => AppMsg::SetError(err.to_string())
-//            }
-//        });
         Self {
             client: None,
             last_block: None,
             error: None,
             interval: None,
+            mempool: None,
+            mempool_interval: None,
             list_to_display: Vec::new(),
             //streamer: None,
         }
@@ -93,57 +82,86 @@ impl Component for App {
                         },
                         Err(err) => AppMsg::SetError(err.to_string())
                     }
-                });
+                    });
                 false
             }
+            AppMsg::FetchMempool => {
+                let client = Arc::clone(&self.client.as_ref().unwrap());
+                ctx.link().send_future(async move {
+                    match client
+                        .txpool_content()
+                        .await {
+                        Ok(mem) => {
+                            AppMsg::UpdateMempool(mem)
+                        },
+                        Err(err) => AppMsg::SetError(err.to_string())
+                    }
+                    });
+                false
+            }
+            AppMsg::UpdateMempool(TxpoolContent) => {
+                self.mempool = Some(TxpoolContent);
+                true
+            }
             AppMsg::StartInterval => {
+                let ctx1 = ctx.link().clone();
                 let handle = {
-                    let link = ctx.link().clone();
-                    Interval::new(12_000, move || link.send_message(AppMsg::FetchLastBlock))
-                };
+                    // blocks are 12s apart. Having 6 to update faster the list and maybe catch something?
+                    Interval::new(6_000, move || ctx1.send_message(AppMsg::FetchLastBlock))
+                };                
                 self.interval = Some(handle);
+// txpool calls are not supported by Infura nor Alchemy 
+//                let ctx2 = ctx.link().clone();
+//                let memp = {
+//                    Interval::new(1_000, move || ctx2.send_message(AppMsg::FetchMempool))
+//                };
+//                self.mempool_interval = Some(memp);
                 log::info!("Started interval");
                 true
             }
             AppMsg::StopInterval => {
-                //handler.cancel(); // HOW TO DEREFERENCE? IS THAT THE GWEI?
+                //handler.cancel(); // HOW TO DEREFERENCE? IS THIS THE GWEI?
                 self.interval = None;                // this works!
+                self.mempool_interval = None;
                 log::info!("Stopped interval");
                 true
             }
             AppMsg::SetClient(provider) => {
                 self.client = Some(Arc::new(provider));
                 ctx.link().send_message(AppMsg::FetchLastBlock); // first fetch
-                ctx.link().send_message(AppMsg::StartInterval); //
+                ctx.link().send_message(AppMsg::StartInterval); // auto-start
                 true
             }
-            AppMsg::SetLastBlock(bn) => {                
-                // moves last_block into list and updates the plot
+            AppMsg::SetLastBlock(bn) => {                            
+                // moves last_block into list and updates the plot                
                 if let Some(pb) = self.last_block.clone() {
-                    self.list_to_display.push(pb);
-                }
-                // lets prepare a good struct for the plot
-                let display: Vec<Tick> = self
-                    .list_to_display
-                    .iter()
-                    .map(|b| {
-                        return Tick {
-                            x: b.timestamp.as_u64(), // convert to datetime?
-                            y: format_units(b.base_fee_per_gas.unwrap_or_default(), 9).unwrap(),
-                        }
-                    })
-                    .collect();
-                let test = serde_wasm_bindgen::to_value(&display).unwrap();
-                match LineChart(test) {
-                    Ok(_) => {                        
-                        ()
-                    },
-                    Err(err) => {
-                        log::error!("Plotting failed! {:?}", err);
-                        AppMsg::SetError("Error on plotting".to_string());
-                        ()
+                    // check that last_block is not in list
+                    if !self.list_to_display.contains(&pb) {
+                        self.list_to_display.push(pb);
                     }
-                };
+
+                    let display: Vec<Tick> = self
+                        .list_to_display
+                        .iter()
+                        .map(|b| {
+                            return Tick {
+                                x: b.timestamp.as_u64(), // convert to datetime?
+                                y: format_units(b.base_fee_per_gas.unwrap_or_default(), 9).unwrap(),
+                            }
+                        })
+                        .collect();
+                    let test = serde_wasm_bindgen::to_value(&display).unwrap();
+                    match LineChart(test) {
+                        Ok(_) => {                        
+                            ()
+                        },
+                        Err(err) => {
+                            log::error!("Plotting failed! {:?}", err);
+                            AppMsg::SetError("Error on plotting".to_string());
+                            ()
+                        }
+                    };
+                }
                 // sets new block (not plotted)
                 self.last_block = Some(bn);
 
@@ -206,7 +224,7 @@ impl App {
                         <th>{"value"}</th>
                     </tr>
                     <tr>
-                        <td>{"number"}</td> // make it a link
+                        <td>{"number"}</td>
                         <td>
                             <a href={format!("https://etherscan.io/block/{}", last_block.number.unwrap())} target={"blank"} style={"color:white;"}>
                                 {last_block.number.unwrap()}
@@ -247,10 +265,7 @@ impl App {
             .into_iter()
             .rev()
             .collect();
-        let limited_txs = sorted_txs.iter().take(4);
-        log::info!("limited {:?}", limited_txs.len());
-        // its 3
-        // but then why does it print > 3?
+        let limited_txs = sorted_txs.iter().take(6);
         let prev_txs: Html = limited_txs
             .map(|tx| {
                 html!{

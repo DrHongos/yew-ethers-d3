@@ -4,12 +4,12 @@ export function LineChart(data, {
 //    y = ([, y]) => y, // given d in data, returns the (quantitative) y-value
     defined, // for gaps in data
     curve = d3.curveLinear, // method of interpolation between points
-    marginTop = 20, // top margin, in pixels
+    marginTop = 10, // top margin, in pixels
     marginRight = 30, // right margin, in pixels
     marginBottom = 30, // bottom margin, in pixels
-    marginLeft = 40, // left margin, in pixels
-    width = 640, // outer width, in pixels
-    height = 400, // outer height, in pixels
+    marginLeft = 100, // left margin, in pixels
+    width = 900, // outer width, in pixels
+    height = 640, // outer height, in pixels
     xType = d3.scaleUtc, // the x-scale type
     xDomain, // [xmin, xmax]
     xRange = [marginLeft, width - marginRight], // [left, right]
@@ -25,10 +25,10 @@ export function LineChart(data, {
     strokeOpacity = 1, // stroke opacity of line
   } = {}) {
     // Compute values.
-    // i dont really get d3.map
+    // i dont really get the d3.map function here
 //    const X = d3.map(data, x);
 //    const Y = d3.map(data, y);
-    // easier to mock data 
+    // easier to mock data (in a struct)
     const X = data.map(tick => tick.x);
     const Y = data.map(tick => tick.y);
 
@@ -38,7 +38,8 @@ export function LineChart(data, {
   
     // Compute default domains.
     if (xDomain === undefined) xDomain = d3.extent(X);
-    if (yDomain === undefined) yDomain = [0, d3.max(Y)];
+    let yMaxHolder = d3.max(Y);
+    if (yDomain === undefined) yDomain = [0, 1.5*yMaxHolder];
   
     // Construct scales and axes.
     const xScale = xType(xDomain, xRange);
@@ -71,6 +72,7 @@ export function LineChart(data, {
     svg.append("g")
         .attr("transform", `translate(${marginLeft},0)`)
         .call(yAxis)
+        .style("font", "24px sans serif")
         .call(g => g.select(".domain").remove())
         .call(g => g.selectAll(".tick line").clone()
             .attr("x2", width - marginLeft - marginRight)

@@ -1,29 +1,17 @@
 # Yew Ethers D3
 Simpleton mainnet ethereum explorer.
-//      add other networks
-//      make variable in plot selectable (handle different types)
+
+
+
+TOPLAY
 //      fetch previous data
+//      add other networks (?)
+//      make variable in plot selectable (handle different types)
 //      cache?
 //      add filters (listeners & for queries (tokens, NFTs (ethers has a module for it)))      
 //      download csv (what data & how many tx's)
-//      play with stream (instead of interval) to continue..
-//  https://github.com/gakonst/ethers-rs/blob/master/examples/subscribe_logs.rs
-//  https://github.com/gakonst/ethers-rs/blob/master/examples/watch_blocks.rs
-//  https://github.com/yewstack/yew/tree/master/examples   // NEW EXAMPLES!!
+//      play with stream (instead of interval) [to continue..]
 
-BUG: 
-    take() function to limit the number of tx printed in the table seems to fail
-    with value 2 or 3 it works.
-    But larger numbers make tome tx to repeat, while printing more rows than desired (and supposedly restricted)
-
-
-# Yew Trunk Template
-
-This is a fairly minimal template for a Yew app that's built with [Trunk].
-
-## Usage
-
-For a more thorough explanation of Trunk and its features, please head over to the [repository][trunk].
 
 ### Installation
 
@@ -47,6 +35,11 @@ cargo install trunk wasm-bindgen-cli
 That's it, we're done!
 
 ### Running
+
+You need to create an .env file with the following information
+WSS_KEY_MAINNET = "Your WSS mainnet key"
+
+// it does not have to be infura
 
 ```bash
 trunk serve
@@ -84,6 +77,7 @@ The [index.html](index.html) file also contains a `<title>` tag that needs updat
 Finally, you should update this very `README` file to be about your app.
 
 ### License
+This example was made with Trunk templates.
 
 The template ships with both the Apache and MIT license.
 If you don't want to have your app dual licensed, just remove one (or both) of the files and update the `license` field in `Cargo.toml`.
