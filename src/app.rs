@@ -17,7 +17,11 @@ use gloo_timers::callback::Interval;
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
 
-use crate::{components::{lineal_chart::LinealChart}};
+use crate::{components::{
+    lineal_chart::LinealChart,
+    last_block::LastBlock,
+    history_blocks::HistoryBlocks,
+}};
 const API_MAINNET_KEY: &str = dotenv!("WSS_KEY_MAINNET");
 
 pub enum AppMsg {
@@ -181,10 +185,18 @@ impl Component for App {
                     </tr>
                     <tr>
                     <td>
-                        {self.table_block()}
+                        if let Some(last_block) = &self.last_block {
+                            <LastBlock
+                                last_block={last_block.clone()}
+                            />
+                        } else {
+                            <p>{"Fetching.."}</p>
+                        }
                     </td>
                     <td>
-                        {self.prevs_table()}
+                        <HistoryBlocks
+                            blocks = {self.list_to_display.clone()} 
+                        />
                     </td>
                     </tr>
                 </table>
@@ -215,89 +227,5 @@ impl App {
         let parsed = serde_wasm_bindgen::to_value(&display).unwrap();
         parsed
     }
-    pub fn table_block(&self) -> Html {
-        if let Some(last_block) = &self.last_block {
-            html! {
-                <table>
-                    <tr>
-                        <th>{"key"}</th>
-                        <th>{"value"}</th>
-                    </tr>
-                    <tr>
-                        <td>{"number"}</td>
-                        <td>
-                            <a href={
-                                format!("https://etherscan.io/block/{}", last_block.number.unwrap())
-//                                Arc::clone(&self.client.as_ref().unwrap()).block_url(last_block.number.unwrap())
-                            } target={"blank"} style={"color:white;"}>
-                                {last_block.number.unwrap()}
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>{"hash"}</td>
-                        <td>{last_block.hash.unwrap()}</td>
-                    </tr>
-                    <tr>
-                        <td>{"basefee"}</td>
-                        <td>
-                        {format!("{:.3} gwei", format_units(last_block.base_fee_per_gas.unwrap(), 9).unwrap())}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>{"gas used"}</td>
-                        <td>{last_block.gas_used}</td>
-                    </tr>
-                    <tr>
-                        <td>{"tx.len()"}</td>
-                        <td>{last_block.transactions.len()}</td>
-                    </tr>
-                    <tr>
-                        <td>{"size"}</td>
-                        <td>{last_block.size.unwrap()} {" bytes"}</td>
-                    </tr>
-                </table>
-            }
-        } else {
-            html! {}
-        }
-    }
-    pub fn prevs_table(&self) -> Html {
-        let sorted_txs: Vec<Block<H256>> = self.list_to_display
-            .clone()
-            .into_iter()
-            .rev()
-            .collect();
-        let limited_txs = sorted_txs.iter().take(6);
-        let prev_txs: Html = limited_txs
-            .map(|tx| {
-                html!{
-                    <tr key={tx.hash.as_ref().unwrap().to_string()}>
-                        <td>
-                            <a href={format!("https://etherscan.io/block/{}", tx.number.unwrap())} target={"blank"} style={"color:white;"}>
-                                {tx.number.unwrap()}
-                            </a>
-                        </td>
-                        <td>{tx.hash.unwrap()}</td>
-                        <td>{format!("{:.3} gwei", format_units(tx.base_fee_per_gas.unwrap(), 9).unwrap())}</td>
-                        <td>{tx.gas_used}</td>
-                        <td>{tx.transactions.len()}</td>
-                        <td>{format!("{} bytes", tx.size.unwrap())}</td>
-                    </tr>
-                }
-            }).collect();
-        html! {
-            <table>
-                <tr>
-                    <th>{"block number"}</th>
-                    <th>{"hash"}</th>
-                    <th>{"base fee"}</th>
-                    <th>{"gas used"}</th>
-                    <th>{"tx's qty"}</th>
-                    <th>{"size"}</th>
-                </tr>
-                { prev_txs }
-            </table>
-        }
-    }
+
 }
