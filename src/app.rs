@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////
 //          TODO:
-//  Implement ethers::etherscan::Client
-// use ethers::types::Chain 
-// and have multiple env api keys for different conditions to choose network
-//      Make it closer to an explorer.
-//      Allow fetching data of an account (metamask connected?)
-//      Read ABI's of contracts (display handler?)
-//      Display stats about contracts (as a verifier)
+//      Input: EOA
+    //      Allow fetching data of an account (metamask connected?)
+    //      Fetch balance
+    //      Fetch & display ERC20/ERC721/ERC1155 transfers
+//      Input: Contract address
+    //      Read ABI's of contracts (display handler?)
+    //      Display stats about contracts (as a verifier)
 //      Refactor
 ////////////////////////////////////////////////////////
 #![allow(non_snake_case)]
@@ -16,14 +16,14 @@ use std::sync::Arc;
 use gloo_timers::callback::Interval;
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
-
+use ethers::etherscan::Client;
 use crate::{components::{
     lineal_chart::LinealChart,
     last_block::LastBlock,
     history_blocks::HistoryBlocks,
+    erc20_history::ERC20History,
 }};
 const API_MAINNET_KEY: &str = dotenv!("WSS_KEY_MAINNET");
-
 pub enum AppMsg {
     SetClient(Provider<Ws>),
     FetchLastBlock,
@@ -66,7 +66,7 @@ impl Component for App {
             client: None,
             last_block: None,
             error: None,
-            interval: None,
+            interval: None,            
 //            mempool: None,
 //            mempool_interval: None,
             list_to_display: Vec::new(),
@@ -161,6 +161,8 @@ impl Component for App {
                     <p>{ format!("Error: {:?}", error) }</p>
                 }
 
+                <ERC20History />
+                
                 if !self.client.is_none() {
                     if self.interval.is_none() {
                         <button onclick={ctx.link().callback(|_| AppMsg::StartInterval)}>
@@ -200,6 +202,10 @@ impl Component for App {
                     </td>
                     </tr>
                 </table>
+                if !self.client.is_none() {
+                    <p>{"Provider (WS) connected"}</p>
+                }
+
             </main>
         }
     }

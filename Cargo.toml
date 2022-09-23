@@ -18,3 +18,4 @@ wasm-logger = "0.2"
 gloo-timers = "0.2.4"
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 serde-wasm-bindgen = "0.4.3"
+web-sys = "0.3.5"
