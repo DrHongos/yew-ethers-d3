@@ -1,0 +1,6 @@
+Create a dapp that allows you to enter a contract address (or search in a curated list)
+once found it, reads its ABI and presents functional components to call functions/read values
+also displays plots and statistics about it.
+Usage is to validate smart contracts and operate with them.
+pain point: calling from metamask. Since idk the functions that are gonna be called. Study the case of creating a tx, pushing it and sign it from metamaks in the browser.
+https://docs.rs/ethers/0.17.0/ethers/etherscan/contract/struct.Metadata.html

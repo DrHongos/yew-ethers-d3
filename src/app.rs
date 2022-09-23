@@ -1,3 +1,14 @@
+////////////////////////////////////////////////////////
+//          TODO:
+//  Implement ethers::etherscan::Client
+// use ethers::types::Chain 
+// and have multiple env api keys for different conditions to choose network
+//      Make it closer to an explorer.
+//      Allow fetching data of an account (metamask connected?)
+//      Read ABI's of contracts (display handler?)
+//      Display stats about contracts (as a verifier)
+//      Refactor
+////////////////////////////////////////////////////////
 #![allow(non_snake_case)]
 use yew::prelude::*;
 use ethers::{prelude::*, utils::format_units};
@@ -6,14 +17,8 @@ use gloo_timers::callback::Interval;
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
 
+use crate::{components::{lineal_chart::LinealChart}};
 const API_MAINNET_KEY: &str = dotenv!("WSS_KEY_MAINNET");
-
-#[wasm_bindgen(module = "/src/jscripts/lineal_chart.js")]
-extern "C" {
-    #[wasm_bindgen(js_name = "LineChart")]
-    #[wasm_bindgen(catch)]
-    pub fn LineChart(data: JsValue) -> Result<JsValue, JsValue>;
-}
 
 pub enum AppMsg {
     SetClient(Provider<Ws>),
@@ -21,23 +26,18 @@ pub enum AppMsg {
     SetLastBlock(Block<H256>),    
     SetError(String),
     StartInterval,
-    FetchMempool,
-    UpdateMempool(TxpoolContent),
+//    FetchMempool,
+//    UpdateMempool(TxpoolContent),
     StopInterval,
 }
 pub struct App {
     client: Option<Arc<Provider<Ws>>>,
     last_block: Option<Block<H256>>,    
     interval: Option<Interval>,
-    mempool_interval: Option<Interval>,
-    mempool: Option<TxpoolContent>,
+//    mempool_interval: Option<Interval>,
+//    mempool: Option<TxpoolContent>,
     error: Option<String>,
     list_to_display: Vec<Block<H256>>,
-}
-#[derive(Debug, Serialize)]
-struct Tick {
-    x: u64,
-    y: String, // hardcoded to base_fee_per_gas attribute
 }
 
 impl Component for App {
@@ -63,8 +63,8 @@ impl Component for App {
             last_block: None,
             error: None,
             interval: None,
-            mempool: None,
-            mempool_interval: None,
+//            mempool: None,
+//            mempool_interval: None,
             list_to_display: Vec::new(),
             //streamer: None,
         }
@@ -85,24 +85,24 @@ impl Component for App {
                     });
                 false
             }
-            AppMsg::FetchMempool => {
-                let client = Arc::clone(&self.client.as_ref().unwrap());
-                ctx.link().send_future(async move {
-                    match client
-                        .txpool_content()
-                        .await {
-                        Ok(mem) => {
-                            AppMsg::UpdateMempool(mem)
-                        },
-                        Err(err) => AppMsg::SetError(err.to_string())
-                    }
-                    });
-                false
-            }
-            AppMsg::UpdateMempool(TxpoolContent) => {
-                self.mempool = Some(TxpoolContent);
-                true
-            }
+//            AppMsg::FetchMempool => {
+//                let client = Arc::clone(&self.client.as_ref().unwrap());
+//                ctx.link().send_future(async move {
+//                    match client
+//                        .txpool_content()
+//                        .await {
+//                        Ok(mem) => {
+//                            AppMsg::UpdateMempool(mem)
+//                        },
+//                        Err(err) => AppMsg::SetError(err.to_string())
+//                    }
+//                    });
+//                false
+//            }
+//            AppMsg::UpdateMempool(TxpoolContent) => {
+//                self.mempool = Some(TxpoolContent);
+//                true
+//            }
             AppMsg::StartInterval => {
                 let ctx1 = ctx.link().clone();
                 let handle = {
@@ -122,7 +122,7 @@ impl Component for App {
             AppMsg::StopInterval => {
                 //handler.cancel(); // HOW TO DEREFERENCE? IS THIS THE GWEI?
                 self.interval = None;                // this works!
-                self.mempool_interval = None;
+                //self.mempool_interval = None;
                 log::info!("Stopped interval");
                 true
             }
@@ -139,32 +139,8 @@ impl Component for App {
                     if !self.list_to_display.contains(&pb) {
                         self.list_to_display.push(pb);
                     }
-
-                    let display: Vec<Tick> = self
-                        .list_to_display
-                        .iter()
-                        .map(|b| {
-                            return Tick {
-                                x: b.timestamp.as_u64(), // convert to datetime?
-                                y: format_units(b.base_fee_per_gas.unwrap_or_default(), 9).unwrap(),
-                            }
-                        })
-                        .collect();
-                    let test = serde_wasm_bindgen::to_value(&display).unwrap();
-                    match LineChart(test) {
-                        Ok(_) => {                        
-                            ()
-                        },
-                        Err(err) => {
-                            log::error!("Plotting failed! {:?}", err);
-                            AppMsg::SetError("Error on plotting".to_string());
-                            ()
-                        }
-                    };
                 }
-                // sets new block (not plotted)
                 self.last_block = Some(bn);
-
                 true
             }
             AppMsg::SetError(err) => {
@@ -193,7 +169,11 @@ impl Component for App {
                         </button>                
                     }
                 }
-                <div id="chart" class="is-fullheight"></div>
+                if self.list_to_display.len() != 0 {
+                        <LinealChart
+                            list_to_display = {self.lineal_plot_data()}
+                        />                    
+                }
                 <table>
                     <tr>
                         <th> {"Last block"}</th>
@@ -214,7 +194,27 @@ impl Component for App {
     
 }
 
+#[derive(Debug, Serialize)]
+pub struct Tick {
+    pub x: u64,
+    pub y: String, // hardcoded to base_fee_per_gas attribute
+}
+
 impl App {
+    pub fn lineal_plot_data(&self) -> JsValue {
+        let display: Vec<Tick> = self
+            .list_to_display
+            .iter()
+            .map(|b| {
+                return Tick {
+                    x: b.timestamp.as_u64(), // convert to datetime?
+                    y: format_units(b.base_fee_per_gas.unwrap_or_default(), 9).unwrap(),
+                }
+            })
+            .collect();
+        let parsed = serde_wasm_bindgen::to_value(&display).unwrap();
+        parsed
+    }
     pub fn table_block(&self) -> Html {
         if let Some(last_block) = &self.last_block {
             html! {
@@ -226,7 +226,10 @@ impl App {
                     <tr>
                         <td>{"number"}</td>
                         <td>
-                            <a href={format!("https://etherscan.io/block/{}", last_block.number.unwrap())} target={"blank"} style={"color:white;"}>
+                            <a href={
+                                format!("https://etherscan.io/block/{}", last_block.number.unwrap())
+//                                Arc::clone(&self.client.as_ref().unwrap()).block_url(last_block.number.unwrap())
+                            } target={"blank"} style={"color:white;"}>
                                 {last_block.number.unwrap()}
                             </a>
                         </td>
