@@ -16,7 +16,6 @@ use std::sync::Arc;
 use gloo_timers::callback::Interval;
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
-use ethers::etherscan::Client;
 use crate::{components::{
     lineal_chart::LinealChart,
     last_block::LastBlock,
@@ -52,8 +51,8 @@ impl Component for App {
             match Ws::connect(API_MAINNET_KEY).await {
                 Ok(ws) => {
                     let provider = Provider::new(ws);
-                    let client_ver = provider.client_version().await.unwrap();
-                    log::info!("Provider: {}",client_ver);
+//                    let client_ver = provider.client_version().await.unwrap();
+//                    log::info!("Provider: {}",client_ver);
                     AppMsg::SetClient(provider)
                 },
                 Err(err) => {
@@ -133,7 +132,7 @@ impl Component for App {
             AppMsg::SetClient(provider) => {
                 self.client = Some(Arc::new(provider));
                 ctx.link().send_message(AppMsg::FetchLastBlock); // first fetch
-                ctx.link().send_message(AppMsg::StartInterval); // auto-start
+//                ctx.link().send_message(AppMsg::StartInterval); // auto-start
                 true
             }
             AppMsg::SetLastBlock(bn) => {                            
