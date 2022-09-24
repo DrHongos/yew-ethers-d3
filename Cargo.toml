@@ -19,3 +19,13 @@ gloo-timers = "0.2.4"
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 serde-wasm-bindgen = "0.4.3"
 web-sys = "0.3.5"
+#polars = "0.24.1"
+#error: could not compile `crossterm` due to 7 previous errors
+#Some errors have detailed explanations: E0046, E0308, E0425, E0432.
+#error[E0432]: unresolved import `sys::position`
+#error[E0425]: cannot find value `source` in this scope
+#error[E0425]: cannot find function `enable_raw_mode` in module `sys`
+#error[E0425]: cannot find function `disable_raw_mode` in module `sys`
+#error[E0425]: cannot find function `size` in module `sys`
+#error[E0046]: not all trait items implemented, missing: `eval`
+#error[E0308]: mismatched types

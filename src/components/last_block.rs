@@ -10,7 +10,7 @@ pub struct LastBlockProps {
 pub fn table_block(props: &LastBlockProps) -> Html {
     let last_block = &props.last_block;
     html! {
-        <table>
+        <table class="table">
             <tr>
                 <th>{"key"}</th>
                 <th>{"value"}</th>
@@ -21,7 +21,7 @@ pub fn table_block(props: &LastBlockProps) -> Html {
                     <a href={
                         format!("https://etherscan.io/block/{}", last_block.number.unwrap())
 //                                Arc::clone(&self.client.as_ref().unwrap()).block_url(last_block.number.unwrap())
-                    } target={"blank"} style={"color:white;"}>
+                    } target={"blank"}>
                         {last_block.number.unwrap()}
                     </a>
                 </td>

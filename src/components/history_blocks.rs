@@ -20,7 +20,7 @@ pub fn prevs_table(props: &HistoryBlocksProps) -> Html {
             html!{
                 <tr key={tx.hash.as_ref().unwrap().to_string()}>
                     <td>
-                        <a href={format!("https://etherscan.io/block/{}", tx.number.unwrap())} target={"blank"} style={"color:white;"}>
+                        <a href={format!("https://etherscan.io/block/{}", tx.number.unwrap())} target={"blank"}>
                             {tx.number.unwrap()}
                         </a>
                     </td>
@@ -33,7 +33,7 @@ pub fn prevs_table(props: &HistoryBlocksProps) -> Html {
             }
         }).collect();
     html! {
-        <table>
+        <table class="table">
             <tr>
                 <th>{"block number"}</th>
                 <th>{"hash"}</th>

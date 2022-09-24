@@ -14,6 +14,7 @@ use yew::prelude::*;
 use web_sys::{HtmlInputElement};
 use ethers::etherscan::{Client, account::TokenQueryOption};
 use ethers::types::Chain;
+//use polars::prelude::*;
 
 const API_MAINNET_KEY: &str = dotenv!("WSS_KEY_MAINNET");
 const ETHERSCAN_API_KEY: &str = dotenv!("ETHERSCAN_API_KEY");
@@ -185,7 +186,7 @@ impl Component for ERC20History {
                     onchange={ctx.link().callback(|_| ERC20HistoryMsg::FetchAddress)}
                 />
                 if !&self.address.is_none() {
-                    <p>{"Address accepted"}</p>
+                    <p>{format!("Address accepted {}", &self.address.unwrap())}</p>
                     <button onclick={
                         ctx.link().callback(|_| ERC20HistoryMsg::FetchERC20Transactions)
                     }>{"Fetch ERC20 transactions"}</button>

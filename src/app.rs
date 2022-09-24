@@ -155,56 +155,60 @@ impl Component for App {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
-            <main>
+            <main class="container">
                 if let Some(error) = &self.error {
                     <p>{ format!("Error: {:?}", error) }</p>
                 }
-
-                <ERC20History />
-                
-                if !self.client.is_none() {
-                    if self.interval.is_none() {
-                        <button onclick={ctx.link().callback(|_| AppMsg::StartInterval)}>
-                            {"Start interval"}
-                        </button>
-                    } else {
-                        <button onclick={ctx.link().callback(|_| AppMsg::StopInterval)}>
-                            <div class={"spinner"}></div>
-                            {"Stop interval"}                            
-                        </button>                
-                    }
-                }
-                if self.list_to_display.len() != 0 {
-                        <LinealChart
-                            list_to_display = {self.lineal_plot_data()}
-                        />                    
-                }
-                <table>
-                    <tr>
-                        <th> {"Last block"}</th>
-                        <th> {"Previously, on mainnet.."}</th>
-                    </tr>
-                    <tr>
-                    <td>
-                        if let Some(last_block) = &self.last_block {
-                            <LastBlock
-                                last_block={last_block.clone()}
-                            />
-                        } else {
-                            <p>{"Fetching.."}</p>
+                // separate next in two cols
+                <div class="columns">
+                    <div class="column">
+                        <ERC20History />
+                    </div>
+                    <div class="column">                
+                        if !self.client.is_none() {
+                            if self.interval.is_none() {
+                                <button onclick={ctx.link().callback(|_| AppMsg::StartInterval)}>
+                                    {"Start interval"}
+                                </button>
+                            } else {
+                                <button onclick={ctx.link().callback(|_| AppMsg::StopInterval)}>
+                                    <div class={"spinner"}></div>
+                                    {"Stop interval"}                            
+                                </button>                
+                            }
                         }
-                    </td>
-                    <td>
-                        <HistoryBlocks
-                            blocks = {self.list_to_display.clone()} 
-                        />
-                    </td>
-                    </tr>
-                </table>
-                if !self.client.is_none() {
-                    <p>{"Provider (WS) connected"}</p>
-                }
-
+                        if self.list_to_display.len() != 0 {
+                                <LinealChart
+                                    list_to_display = {self.lineal_plot_data()}
+                                />                    
+                        }
+                        <table class="table">
+                            <tr>
+                                <th> {"Last block"}</th>
+                                <th> {"Previously, on mainnet.."}</th>
+                            </tr>
+                            <tr>
+                            <td>
+                                if let Some(last_block) = &self.last_block {
+                                    <LastBlock
+                                        last_block={last_block.clone()}
+                                    />
+                                } else {
+                                    <p>{"Fetching.."}</p>
+                                }
+                            </td>
+                            <td>
+                                <HistoryBlocks
+                                    blocks = {self.list_to_display.clone()} 
+                                />
+                            </td>
+                            </tr>
+                        </table>
+                        if !self.client.is_none() {
+                            <p>{"Provider (WS) connected"}</p>
+                        }
+                    </div>
+                </div>
             </main>
         }
     }
