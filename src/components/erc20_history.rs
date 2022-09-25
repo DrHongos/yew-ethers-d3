@@ -1,20 +1,22 @@
-// al fondo!
-// fetch erc20 history of an address
-// displays something nice (stats, plot)
-// timestamp of txs
-// list of tokens
-// list of address interacted with
-// networks
-
+// get a network of txs where the account fetched is in the middle
 use std::sync::Arc;
 use std::collections::HashSet;
 use ethers::prelude::*;
 use ethers::prelude::account::ERC20TokenTransferEvent;
+use ethers::utils::format_units;
 use yew::prelude::*;
 use web_sys::{HtmlInputElement};
 use ethers::etherscan::{Client, account::TokenQueryOption};
 use ethers::types::Chain;
-//use polars::prelude::*;
+use wasm_bindgen::prelude::*;
+use serde::Serialize;
+
+#[wasm_bindgen(module = "/src/jscripts/parallel_coordinates_chart.js")]
+extern "C" {
+    #[wasm_bindgen(js_name = "ParallelCoordinates")]
+    #[wasm_bindgen(catch)]
+    pub fn ParallelCoordinates(data: JsValue, info: JsValue) -> Result<JsValue, JsValue>;
+}
 
 const API_MAINNET_KEY: &str = dotenv!("WSS_KEY_MAINNET");
 const ETHERSCAN_API_KEY: &str = dotenv!("ETHERSCAN_API_KEY");
@@ -163,8 +165,22 @@ impl Component for ERC20History {
             }
             ERC20HistoryMsg::SetResult(txs) => {
                 self.history.truncate(0);
-                log::info!("Txs: {:?}", txs);
+                //log::info!("Txs: {:?}", txs);
                 self.history.extend(txs);
+                // TODO: call create parallel set
+                let (data, info_parsed) = self.get_parallel_coordinates_data();
+                //log::info!("Data len: {:?}", &data);
+                match ParallelCoordinates(data, info_parsed) {
+                    Ok(_) => {                        
+                        log::debug!("Plotting success!");
+                        ()
+                    },
+                    Err(err) => {
+                        log::error!("Plotting failed! {:?}", err);
+                        ()
+                    }
+                };
+            
                 true
             }
             ERC20HistoryMsg::SetError(err) => {
@@ -176,13 +192,12 @@ impl Component for ERC20History {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
-            <span>
-                {"Enter an EOA address: "}
+            <div>
                 <input 
                     ref={&self.search}
                     class={"input is-info"}
                     type={"text"}
-                    placeholder={"EOA Address"}
+                    placeholder={"Enter address or ENS"}
                     onchange={ctx.link().callback(|_| ERC20HistoryMsg::FetchAddress)}
                 />
                 if !&self.address.is_none() {
@@ -195,45 +210,113 @@ impl Component for ERC20History {
                     <p>{format!("ENS: {}", ens)}</p>
                 }
                 if self.history.len() > 0 {
-                    <p>{format!("ERC20 tx total: {}", &self.history.len())}</p>
-                    {self.network()}
+                    <p>{format!("{} ERC20 transactions", &self.history.len())}</p>
+                    // {} 
                 }
                 if let Some(errors) = &self.error {
                     <p>{format!("Error: {}", errors)}</p>
                 }
-            </span>
+                <div id="parallel"></div>// class="is-fullheight"
+
+            </div>
         }
     }
 }
 
-//#[derive(Clone, Debug)]
-//struct TokenMini {
-//    contract: H160,
-//    name: String,
-//    symbol: String,
+#[derive(Clone, Debug, Serialize)]
+struct Tick {
+    token_name: String, // only for the text
+    contract_address: usize,
+    timestamp: String,
+    from: usize,//H160,
+    to: usize,//H160,
+    amount: String,
+    received: bool, // otherwise transferred
+}
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Hash)]
+struct TokenData {
+    contract_address: H160,
+    token_name: String,
+    //token_symbol: String,
+}
+
+// from & to should also share the 
+//struct AddressData {
+//    address: H160,
+//    name: String, // ENS to fetch
 //}
+
+#[derive(Clone, Debug, Serialize)]
+struct Information {
+    tokens: Vec<TokenData>,
+    from: Vec<String>,
+    to: Vec<String>,
+}
 impl ERC20History {
-    fn network(&self) -> Html {
-        // based on history or ERC20 txs
-        let users: Vec<H160> = vec![];
+
+    fn unique_tokens(&self) -> Vec<TokenData> {
         let r = &self.history;
-        let tokens: Vec<String> = r
+        let tokens: Vec<TokenData> = r
             .into_iter()
-            .map(|tx| tx.token_name.clone())
+            .map(|tx| {
+                return 
+                TokenData {
+                    token_name: tx.token_name.clone(),
+                    contract_address: tx.contract_address.clone(),
+                    //token_symbol: tx.token_symbol.clone(),
+                }
+            })
             .collect::<HashSet<_>>()
             .into_iter()
             .collect();
-        // need to dedup
-        log::info!("tokens: {:?}", &tokens);
-        // 
-        html! {
-            <>
-                <p>{format!("You have interacted with {} addresses and with {} different ERC20 tokens.", 
-                    users.len(),
-                    tokens.len()
-                )}</p>
-                <p>{format!("only considers OUT txs.")}</p>
-            </>
+        tokens
+    }
+    fn unique_froms(&self) -> Vec<String> {
+        let r = &self.history;
+        let froms: Vec<String> = r
+            .into_iter()
+            .map(|tx| tx.from.to_string().clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        froms
+    }
+    fn unique_to(&self) -> Vec<String> {
+        let r = &self.history;
+        let tos: Vec<String> = r
+            .into_iter()
+            .map(|tx| tx.to.unwrap().to_string().clone())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        tos
+    }
+    fn get_info(&self) -> Information {
+        Information {
+            tokens: self.unique_tokens(),
+            from: self.unique_froms(),
+            to: self.unique_to(),
         }
+    }
+    fn get_parallel_coordinates_data(&self) -> (JsValue, JsValue) {
+        let r = &self.history;
+        let info = self.get_info();
+        //log::info!("info {:?}", info);
+        let info_parsed = serde_wasm_bindgen::to_value(&info).unwrap();
+        let ticks = r
+            .into_iter()
+            .map(|x| return Tick {
+                token_name: x.token_name.clone(),
+                timestamp: x.time_stamp.clone(),
+                contract_address: info.tokens.iter().position(|r| r.contract_address == x.contract_address).unwrap(),//x.contract_address.clone(),
+                from: info.from.iter().position(|r| *r == x.from.to_string()).unwrap(),//x.from.clone(),
+                to: info.to.iter().position(|r| *r == x.to.unwrap().to_string()).unwrap(),//x.to.as_ref().unwrap().clone(),
+                amount: format_units(x.value, x.token_decimal.parse::<i32>().unwrap()+4i32).unwrap(),
+                received: self.address.unwrap() == x.from,
+            })
+            .collect::<Vec<Tick>>();
+        //log::info!("Collected {} items", &ticks.len());
+        let parsed = serde_wasm_bindgen::to_value(&ticks).unwrap();
+        (parsed, info_parsed)
     }
 }

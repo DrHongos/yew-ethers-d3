@@ -55,10 +55,11 @@ export function LineChart(data, {
         .y(i => yScale(Y[i]));
   
 //    d3.select("svg").empty();
-    d3.select("svg").remove();
+    d3.select("#chart").select("svg").remove();
 
     const svg = d3
         .select("#chart")        
+        //.remove()
         .append("svg")
         .attr("width", width)
         .attr("height", height)
