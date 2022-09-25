@@ -39,8 +39,7 @@ That's it, we're done!
 
 You need to create an .env file with the following information
 WSS_KEY_MAINNET = "Your WSS mainnet key"
-
-// it does not have to be infura
+ETHERSCAN_API_KEY = "Your etherscan API key"
 
 ```bash
 trunk serve
