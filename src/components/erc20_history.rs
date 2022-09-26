@@ -1,4 +1,8 @@
+#![allow(dead_code)]
 // get a network of txs where the account fetched is in the middle
+// handle addresses (find ENS?)
+// normalize values in parallel set.. otherwise plot are bs
+
 use std::sync::Arc;
 use std::collections::HashSet;
 use ethers::prelude::*;
@@ -11,11 +15,15 @@ use ethers::types::Chain;
 use wasm_bindgen::prelude::*;
 use serde::Serialize;
 
-#[wasm_bindgen(module = "/src/jscripts/parallel_coordinates_chart.js")]
+#[wasm_bindgen(module = "/src/jscripts/parallel_charts.js")]
 extern "C" {
     #[wasm_bindgen(js_name = "ParallelCoordinates")]
     #[wasm_bindgen(catch)]
     pub fn ParallelCoordinates(data: JsValue, info: JsValue) -> Result<JsValue, JsValue>;
+    #[wasm_bindgen(js_name = "ParallelSet")]
+    #[wasm_bindgen(catch)]
+    pub fn ParallelSet(data: JsValue) -> Result<JsValue, JsValue>;
+
 }
 
 const API_MAINNET_KEY: &str = dotenv!("WSS_KEY_MAINNET");
@@ -164,13 +172,16 @@ impl Component for ERC20History {
                 false
             }
             ERC20HistoryMsg::SetResult(txs) => {
-                self.history.truncate(0);
+                self.history.truncate(0); // clean up
                 //log::info!("Txs: {:?}", txs);
                 self.history.extend(txs);
-                // TODO: call create parallel set
-                let (data, info_parsed) = self.get_parallel_coordinates_data();
+//                let (data, info_parsed) = self.get_parallel_coordinates_data();
+
+                let data = self.get_parallel_set_data();
+
                 //log::info!("Data len: {:?}", &data);
-                match ParallelCoordinates(data, info_parsed) {
+                match ParallelSet(data) {
+  //              match ParallelCoordinates(data, info_parsed) {
                     Ok(_) => {                        
                         log::debug!("Plotting success!");
                         ()
@@ -221,6 +232,16 @@ impl Component for ERC20History {
             </div>
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct Sank {
+    timestamp: String, 
+    from: H160, 
+    token_name: String,     
+    to: H160,
+    received: bool,
+    value: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -297,6 +318,22 @@ impl ERC20History {
             from: self.unique_froms(),
             to: self.unique_to(),
         }
+    }
+    fn get_parallel_set_data(&self) -> JsValue {
+        let r = &self.history;
+        let ticks = r
+            .into_iter()
+            .map(|x| return Sank {            
+                token_name: x.token_name.clone(),
+                timestamp: x.time_stamp.clone(),
+                from: x.from.clone(),
+                to: x.to.as_ref().unwrap().clone(),
+                received: self.address.unwrap() == x.from,
+                value: "1".to_string(),//format_units(x.value, x.token_decimal.parse::<i32>().unwrap()+4i32).unwrap(),
+            })
+            .collect::<Vec<Sank>>();
+        let parsed = serde_wasm_bindgen::to_value(&ticks).unwrap();
+        parsed
     }
     fn get_parallel_coordinates_data(&self) -> (JsValue, JsValue) {
         let r = &self.history;

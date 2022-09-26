@@ -12,7 +12,7 @@
 #![allow(non_snake_case)]
 use yew::prelude::*;
 use crate::{components::{
-    tracker_table::Tracker,
+//    tracker_table::Tracker,
     erc20_history::ERC20History,
 }};
 pub enum AppMsg {}
@@ -31,7 +31,7 @@ impl Component for App {
         html! {
             <main class="container">
                 <ERC20History />
-                <Tracker />
+//                <Tracker />
             </main>
         }
     }

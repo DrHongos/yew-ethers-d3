@@ -5,6 +5,7 @@ Simpleton mainnet ethereum explorer.
 
 
 TOPLAY
+modify parallel coordinates to sankey diagram https://observablehq.com/@d3/sankey
 //      fetch previous data
 //      add other networks (?)
 //      make variable in plot selectable (handle different types)
